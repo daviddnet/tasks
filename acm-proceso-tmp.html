@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACM proceso</title>
+    
+    <link rel="stylesheet" href="resources/vendors/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="resources/css/tasks.css">
+    
+    <script type="text/javascript" src="resources/vendors/jquery/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="resources/vendors/handlebars/handlebars-v3.0.3.js" ></script>
+    <script type="text/javascript" src="resources/vendors/bootstrap/bootstrap.min.js" ></script>
+    <script type="text/javascript" src="resources/js/resources.js" ></script>    
+    <script type="text/javascript" src="resources/js/binnacle.js" ></script>
+    <script type="text/javascript" src="resources/js/acm-proceso.js" ></script>
+    <script type="text/javascript" src="resources/js/task.js" ></script>    
+    
+</head>
+<body>
+    <!-- Handlebars old template -->
+    <script id="entry-template-old" type="text/x-handlebars-template">
+        <div class="panel panel-default">
+            <div class="panel-heading" role="tab" id="heading{{id}}">
+                <h4 class="panel-title">
+                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse{{id}}" aria-controls="collapse{{id}}">Tarea #{{id}}
+                    </a>
+                    <button type="button" class="remove-task close" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </h4>
+            </div>
+            <div id="collapse{{id}}" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading{{id}}">
+                <div class="panel-body part-task">
+                    {{#each form}}
+                    <div class="form-group {{css}}">
+                        <label class="col-sm-2 control-label font-bold">{{label}}</label>
+                        <div class="col-sm-10">
+                            {{#each fields}}
+                                {{{control this}}}
+                            {{/each}}
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+    </script>    
+
+    <!-- Handlebars History template -->
+    <script id="history-template" type="text/x-handlebars-template">
+        <div id="{{fieldName}}_History" class="history panel panel-default">
+            <div class="history-header panel-heading">
+                <h4 class="panel-title">
+                    <a href="#{{fieldName}}_HistoryCollapse_{{id}}" data-toggle="collapse">Historial <span class="caret"></span></a>
+                </h4>
+            </div>
+            <div id="{{fieldName}}_HistoryCollapse_{{id}}" class="history-body collapse out">
+                {{#each comments}}
+            <div class="history-item panel panel-default">
+
+                <div class="panel-body">
+                    <div class="col-sm-6"><small><span class="date">{{modifiedFormated}}</span></small></div>
+                    <div class="col-sm-6 ">
+                        <div class="userName"><a class="pull-right" href="/_layouts/15/userdisp.aspx?ID={{userId}}">{{userName}}</a></div>
+                    </div>
+
+                    <div class="col-sm-12">
+                        {{{content}}}
+                    </div>
+                </div>
+
+            </div>
+                {{/each}}
+            </div>
+        </div>
+    </script>   
+    
+    
+    <script id="task-list" type="text/x-handlebars-template">        
+        <div class="panel panel-default" id="binnacle-tasks">
+            <div class="panel-heading main-title">
+                <h2>Tareas</h2>                    
+            </div>
+            <div class="panel-body">                    
+                <a href="#" class="btn btn-primary task-add-btn">Agregar tarea</a>
+                <div class="task-list list-group">        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal -->
+        <div id="binnacle-task-detail" class="modal fade" role="dialog">
+        </div>
+    </script>
+    
+    <div class="container">
+        <div class="orbis-form from-horizontal">
+            <div class="panel panel-default" id="binnacle-tasks">
+                <div class="panel-heading main-title">
+                    <h2>Tareas</h2>                    
+                </div>
+                <div class="panel-body">                    
+                    <a href="#" class="btn btn-primary task-add-btn">Agregar tarea</a>
+                    <div class="task-list list-group">                           
+                        <a href="#" class="task-item list-group-item" data-taskid="n1">                            
+                            <h4 class="list-group-item-heading">
+                                <span class="task-number">1</span>
+                                <span class="task-status label label-info pull-right">Abierta</span> 
+                                <span class="assigned-to">Juan David Maya</span> 
+                            </h4>
+                            <span class="list-group-item-text">
+                                <strong>Vence el:</strong> 5 de octubre de 2016 <span>- Restan <span class="badge">14 días</span></span><br>
+                            </span>
+                            <p class="list-group-item-text task-description">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Similique sequi rerum eius ducimus odio eum, harum repudiandae omnis placeat, alias necessitatibus officiis, asperiores atque. Nostrum numquam, velit expedita sint impedit.</p>
+                        </a>   
+                        <a href="#" class="task-item list-group-item" data-taskid="n2">                            
+                            <h4 class="list-group-item-heading">
+                                <span class="task-number">2</span>
+                                <span class="task-status label label-info pull-right">Abierta</span> 
+                                <span class="assigned-to">Juan David Maya</span> 
+                            </h4>
+                            <span class="list-group-item-text">
+                                <strong>Vence el:</strong> 5 de octubre de 2016 <span>- Restan <span class="badge">25 días</span></span><br>
+                            </span>
+                            <p class="list-group-item-text task-description">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Similique sequi rerum eius ducimus odio eum, harum repudiandae omnis placeat, alias necessitatibus officiis, asperiores atque. Nostrum numquam, velit expedita sint impedit.</p>
+                        </a>   
+                        
+                        <a href="#" class="task-item list-group-item" data-taskid="n3">                             
+                            <h4 class="list-group-item-heading">
+                                <span class="task-number">3</span>
+                                <span class="task-status label label-danger pull-right">Vencida</span> 
+                                <span class="assigned-to">Juan David Maya</span> 
+                            </h4>
+                            <span class="list-group-item-text">
+                                <strong>Vence el:</strong> 5 de octubre de 2015
+                            </span>
+                            <p class="list-group-item-text task-description">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Similique sequi rerum eius ducimus odio eum, harum repudiandae omnis placeat, alias necessitatibus officiis, asperiores atque. Nostrum numquam, velit expedita sint impedit.</p>
+                        </a>   
+                        <a href="#" class="task-item list-group-item" data-taskid="n4">                            
+                            <h4 class="list-group-item-heading">
+                                <span class="task-number">4</span>
+                                <span class="task-status label label-warning pull-right">En progreso</span> 
+                                <span class="assigned-to">Juan David Maya</span> 
+                            </h4>
+                            <span class="list-group-item-text">
+                                <strong>Vence el:</strong> 5 de octubre de 2016 <span>- Restan <span class="badge">30 días</span></span><br>
+                            </span>
+                            <p class="list-group-item-text task-description">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Similique sequi rerum eius ducimus odio eum, harum repudiandae omnis placeat, alias necessitatibus officiis, asperiores atque. Nostrum numquam, velit expedita sint impedit.</p>
+                        </a>   
+                        <a href="#" class="task-item list-group-item" data-taskid="n5">                            
+                            <h4 class="list-group-item-heading">
+                                <span class="task-number">5</span>
+                                <span class="task-status label label-success pull-right">Cumplida</span> 
+                                <span class="assigned-to">Juan David Maya</span> 
+                            </h4>
+                            <span class="list-group-item-text">
+                                <strong>Vence el:</strong> 5 de octubre de 2016
+                            </span>
+                            <p class="list-group-item-text task-description">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Similique sequi rerum eius ducimus odio eum, harum repudiandae omnis placeat, alias necessitatibus officiis, asperiores atque. Nostrum numquam, velit expedita sint impedit.</p>
+                        </a>    
+                                                                     
+                    </div>
+                </div>    
+            </div> 
+            
+            <!-- Modal -->
+            <div id="binnacle-task-detail" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Nueva tarea</h4>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-horizontal" role="form">
+                                <div class="task-detail">
+                                    
+                                    <div class="form-group">
+                                        <label class="control-label col-sm-3" for="email">Descripción:</label>
+                                        <div class="col-sm-9">
+                                            <div class="form-control custom-editable small allowAttachment" contenteditable="true"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group ">
+                                        <label class="col-sm-3 control-label font-bold">Responsable</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control" />
+                                        </div>                                    
+                                    </div>
+                                    <div class="form-group ">
+                                        <label class="col-sm-3 control-label font-bold">Estado</label>
+                                        <div class="col-sm-9">
+                                                <select class="form-control" id="status2" name="status"><option selected="true">En progreso</option><option>Cumplida</option><option>No cumplida</option></select>
+                                        </div>                                    
+                                    </div>                                        
+                                    
+                                    <div class="form-group ">
+                                        <label class="col-sm-3 control-label font-bold">Fecha de compromiso</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control bootstrap-date" id="commitdate1" name="commitdate" placeholder="dd/mm/aaaa">
+                                        </div>            
+                                    </div> 
+                                    
+                                    <div class="form-group">
+                                        <label class="control-label col-sm-3" for="email">Seguimiento</label>
+                                        <div class="col-sm-9">
+                                            <div class="form-control custom-editable allowAttachment" contenteditable="true"></div>
+                                        </div>
+                                    </div>                                   
+                                </div>
+                                <!--end task-detail-->
+                            </div>  
+                            <!--end form-horizontal-->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-success" data-dismiss="modal">Guardar</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+            <!--End modal-->                
+        </div>      
+       <!--End orbis-form  -->
+    </div>
+    <!--end container-->
+       
+    <script>
+        $(document).ready(function() {
+            var binnacle = window.binnacle || {};
+            binnacle.binnacleTasks = new $.binnacleTasks($('#binnacle-tasks'));
+            console.log("Hello world");
+            // call a public method
+            //myplugin.foo_public_method();
+
+            // get the value of a public property
+            //myplugin.settings.property;
+
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACM proceso</title>
+    
+    <link rel="stylesheet" href="resources/vendors/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="resources/css/tasks.css">
+    
+    <script type="text/javascript" src="resources/vendors/jquery/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="resources/vendors/handlebars/handlebars-v3.0.3.js" ></script>
+    <script type="text/javascript" src="resources/vendors/bootstrap/bootstrap.min.js" ></script>
+    <script type="text/javascript" src="resources/js/resources.js" ></script>    
+    <script type="text/javascript" src="resources/js/binnacle.js" ></script>
+    <script type="text/javascript" src="resources/js/acm-proceso.js" ></script>
+    <script type="text/javascript" src="resources/js/task.js" ></script>
+    
+    
+</head>
+<body>
+    <div id="task">
+        <div class="part-tasks panel-group" role="tablist" aria-multiselectable="true">
+        
+
+    <div class="panel panel-default">
+        <div class="panel-heading" role="tab" id="heading1">
+            <h4 class="panel-title">
+                <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse1" aria-controls="collapse1">Tarea #1
+                </a>
+                <button type="button" class="remove-task close" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </h4>
+        </div>
+        <div id="collapse1" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading1">
+            <div class="panel-body part-task">
+                <div class="form-group ">
+                    <label class="col-sm-2 control-label font-bold">Descripción</label>
+                    <div class="col-sm-10">
+                    <div class="row"><div class="col-sm-11"> <input type="hidden" id="taskId1" name="taskId"><input type="hidden" id="LoadStatus1" name="LoadStatus"><div class="undefined"><input type="hidden" id="hftracking1" name="hftracking"></div><div class="undefined"><input type="hidden" id="hfjustification1" name="hfjustification"></div><input type="hidden" id="taskEdited1" name="taskEdited"><div class="undefined"><input type="hidden" id="hfdes1" name="hfdes"></div><div class="form-control custom-editable allowAttachment" data-server-ctrl="hfdes1" contenteditable="true" data-fieldname="TaskTitle" data-listtypename="TareaProceso" id="description1" name="description" placeholder="undefined"></div></div><div class="col-sm-1"><span class="upload-field-attachment glyphicon glyphicon-paperclip" aria-hidden="true"></span></div></div></div>
+                </div>
+                <div class="form-group ">
+                    <label class="col-sm-2 control-label font-bold hide">Estado</label>
+                    <div class="col-sm-10">
+                            <select class="form-control hide" id="status1" name="status"><option>Cumplida</option><option>No cumplida</option></select>
+                    </div>
+                </div>
+                <div class="form-group ">
+                    <label class="col-sm-2 control-label font-bold">Fecha de compromiso</label>
+                    <div class="col-sm-10">
+                            <div class="col-sm-10 no-pad-left"><input type="text" class="form-control bootstrap-date" id="commitdate1" name="commitdate" placeholder="dd/mm/aaaa"></div>
+                            <div class="col-sm-2 hide"><div class="checkbox"><label><input type="checkbox" id="edittask1" name="edittask">Extemporanea</label></div></div>
+                            <div class="col-sm-2 hide"><div class="checkbox"><label><input type="checkbox" id="Edit1" name="Edit">Editar</label></div></div>
+                    </div>
+                </div>
+                <div class="form-group ">
+                    <label class="col-sm-2 control-label font-bold">Responsable</label>
+                    <div class="col-sm-10">
+                            <div id="responsible1" name="responsible"><div dir=""><div class="sp-peoplepicker-topLevel ms-fullWidth" id="responsible1_TopSpan" title="Escribir nombres o direcciones de correo electrónico..." spclientpeoplepicker="true" style="width: 100%;"><input id="responsible1_TopSpan_HiddenInput" name="responsible1_TopSpan_HiddenInput" type="hidden"><div id="responsible1_TopSpan_AutoFillDiv" class="sp-peoplepicker-autoFillContainer"></div><span id="responsible1_TopSpan_InitialHelpText" class="sp-peoplepicker-initialHelpText ms-helperText">Escribir nombres o direcciones de correo electrónico...</span><img class="sp-peoplepicker-waitImg" id="responsible1_TopSpan_WaitImage" alt="Esta animación indica que la operación está en curso. Haga clic para quitar la imagen animada." src="/_layouts/15/images/gears_anv4.gif?rev=23"><span id="responsible1_TopSpan_ResolvedList" class="sp-peoplepicker-resolveList"></span><input type="text" class="sp-peoplepicker-editorInput" size="1" autocomplete="off" value="" id="responsible1_TopSpan_EditorInput" title="Escribir nombres o direcciones de correo electrónico..." autocorrect="off" autocapitalize="off" data-sp-peoplepickereditor="true"></div></div></div>
+                    </div>
+                </div>
+                <div class="form-group ">
+                    <label class="col-sm-2 control-label font-bold">Seguimiento</label>
+                    <div class="col-sm-10">
+                            
+                    <div class="row"><div class="col-sm-11"> <div class="form-control custom-editable allowAppend allowAttachment" data-server-ctrl="hftracking1" contenteditable="true" data-fieldname="Body" data-listtypename="TareaProceso" id="tracking1" name="tracking" placeholder="undefined"></div></div><div class="col-sm-1"><span class="upload-field-attachment glyphicon glyphicon-paperclip" aria-hidden="true"></span></div></div></div>
+                </div>
+                <div class="form-group hide">
+                    <label class="col-sm-2 control-label font-bold">Justificación</label>
+                    <div class="col-sm-10">
+                            <div class="form-control custom-editable allowAttachment hide" data-server-ctrl="hfjustification1" contenteditable="true" data-fieldname="OrbisJustification" data-listtypename="TareaProceso" id="justification1" name="justification" placeholder="undefined" disabled="disabled"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+        <button id="add-task" type="button">Agregar tarea</button>
+        <span id="task-error" class="has-error hide">
+            Debe seleccionar una tarea
+        </span>
+        <span id="track-required" class="has-error hide">
+            Para las tareas extemporáneas, el seguimiento es requerido
+        </span>
+        <span id="justification-required" class="has-error hide">
+            El campo justificación es requerido al modificar la fecha de compromiso
+        </span>
+
+
+    </div>
+</body>
+

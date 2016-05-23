@@ -1,0 +1,50 @@
+#binnacle-tasks .main-title {
+    height: 40px;
+}
+    #binnacle-tasks .main-title h2 {
+        font-size: 20px;
+        margin: 0;    
+    }
+
+
+#binnacle-tasks .btn.task-add-btn{
+    margin: 10px 0px;
+}
+
+.task-list .task-number{  
+    width: 25px;
+    height: 25px;
+    background: #428bca;
+    color: #fff;
+    display: inline-block;
+    text-align: center;
+    line-height: 25px;
+    border-radius: 50%;
+    font-size: 14px;
+}
+
+.task-list .assigned-to {
+    font-size: 15px;    
+}  
+
+.task-list .task-description {
+    color: #666;
+}
+
+.task-list .task-status {
+    font-size: 13px;
+    padding: 5px 15px;
+    width: 110px;
+}
+
+.task-detail .custom-editable {
+    height: auto;
+    min-height: 100px;
+}
+    .task-detail .custom-editable.small {        
+        min-height: 50px;
+    }
+
+.task-detail .control-label {
+    text-align: left;
+} 
