@@ -1,6 +1,6 @@
 "use strict";
 
-;(function($, console, Handlebars) {
+;(function($, console, Handlebars, utils) {
 
     $.binnacleTasks = function(el, options) {
         var _allowInit = false;
@@ -144,11 +144,7 @@
                     displayName : "",
                     loginName : ""                        
                 },
-                dueDate : {
-                    displayDate : '',
-                    value : '',
-                    remainingDays : 0,
-                },                    
+                dueDate : "",                    
                 body : "",
                 justification : ""
             }
@@ -158,6 +154,18 @@
             var _taskModel = null; 
             var _formFields = null; 
             
+            var fields = {
+                'description' : 'Description',
+                'assignedTo' : 'AssignedTo',
+                'dueDate' : 'DueDate',
+                'body' : 'Body'                                 
+            }
+            
+            var actionControls = {
+                "saveBtn" : "SaveBtn",
+                "deleteBtn" : "DeleteBtn"
+            }
+            
             var init = function(taskModel, formFields) {
                 console.log("Initializing task Detail Module");
                 _taskModel = taskModel;
@@ -166,25 +174,238 @@
                 console.log(_taskModel);
                 console.log(_formFields);
                 
-                
-            };
-            
-            var getField = function(fieldName, isContainer) {
-                var container = $( "div[data-taskfield=" + fieldName + "]" );
-                
-                if (isContainer === false) {
-                    
+                if (_taskModel.taskState === 'new') {
+                    formDomManipulation.enableNewMode(_taskModel, _formFields, savingActionEvent);
                 }
                 else {
-                    return container;
+                    formDomManipulation.enableEditMode();
                 }
             };
             
-            var getFieldValue = function(field) {
-                return 0;
-            } 
+            var savingActionEvent = function() {
+                console.log("Saving data");
+                var descriptionField = formDomManipulation.getField(_formFields, fields.description);
+                var assignedToField = formDomManipulation.getField(_formFields, fields.assignedTo);
+                var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
+                var bodyField = formDomManipulation.getField(_formFields, fields.body);
+                
+                // console.log(descriptionField.getValue());
+                // console.log(assignedToField.getValue());
+                // console.log(dueDateField.getValue());
+                // console.log(bodyField.getValue());       
+                
+                // it's new Task
+                if (_taskModel.taskState === "new") {
+                    _taskModel.fullDescription = descriptionField.getValue();
+                    _taskModel.miniDescription = descriptionField.getText(255);
+                    _taskModel.assignedTo.displayName = assignedToField.getValue();
+                    _taskModel.assignedTo.loginName = assignedToField.getValue();         
+                    _taskModel.dueDate = dueDateField.getValue();     
+                    _taskModel.taskState = "added";      
+                }             
+                
+                console.log(_taskModel); 
+            }           
             
-            var validate = function() {                
+            
+            var formDomManipulation = (function() {
+                var disableEditMode = function() {
+                    console.log("Unabling Edit form");
+                }
+                
+                var init = function(formFields) {
+                    // initialize datePicker control
+                    $(formFields).find('.bootstrap-date').datepicker({
+                        language: "es",
+                        autoclose: true
+                    }); 
+                };
+                
+                var enableNewMode = function(taskModel, formFields, saveActionCallBack) {
+                    console.log("New form mode");
+                    
+                    init(formFields);
+                    
+                    var justificationField = getField(formFields, "Justification");
+                    var statusField = getField(formFields, "Status");
+                    var deleteBtnAction = getAction(formFields, "deleteBtn");
+                    var saveBtnAction = getAction(formFields, "saveBtn");
+                    
+                    justificationField.hide();   
+                    statusField.hide();
+                    deleteBtnAction.hide();        
+                    
+                    saveBtnAction.getControl().on('click', function() {
+                        if (saveActionCallBack) {
+                            saveActionCallBack();    
+                        }                        
+                    });                   
+                    
+                    // var statusValues = [{key : "k1", value : "0"}];
+                    // var statusField = formFields.find("div[data-taskfield='Status'] select");
+                    // $.each(statusValues, function(key, value) {   
+                    //     $(statusField)
+                    //         .append($("<option></option>")
+                    //                     .attr("value",key)
+                    //                     .text(value)); 
+                    // });                                                
+                }             
+                
+                var getField = function(formFields, fieldName) {
+                    var fieldContainer = formFields.find("div[data-taskfield='" + fieldName + "']");
+                    var fieldControl = null;     
+                    
+                    var richTextFieldOutput = function(fieldControl) {
+                        return {                            
+                            getValue : function() {
+                                return utils.htmlEscape(fieldControl.html());
+                            },
+                            getText : function(maxLength) {
+                                var text = fieldControl.text();
+                                
+                                if (maxLength && text.length > maxLength) {
+                                    text = text.substring(0, maxLength);
+                                }
+                                
+                                return text;                                
+                            },
+                            setValue : function(val) {
+                                fieldControl.html(val);
+                            },
+                            hide : function(params) {
+                                fieldContainer.addClass("hide");
+                            }                            
+                        }
+                    }; 
+                    
+                    var peopleFieldOutput = function(fieldControl) {
+                        return {                            
+                            getValue : function() {
+                                return fieldControl.val();
+                            },
+                            setValue : function(val) {
+                                fieldControl.val(val);
+                            },
+                            hide : function(params) {
+                                fieldContainer.addClass("hide");
+                            }                            
+                        }
+                    };  
+                    
+                    var textFieldOutput = function(fieldControl) {
+                        return {                            
+                            getValue : function() {
+                                return fieldControl.val();
+                            },
+                            setValue : function(val) {
+                                fieldControl.val(val);
+                            },
+                            hide : function(params) {
+                                fieldContainer.addClass("hide");
+                            }                            
+                        }
+                    };   
+                    
+                    var dateFieldOutput = function(fieldControl) {
+                        return {                            
+                            getValue : function() {
+                                return fieldControl.datepicker('getDate').toISOString();
+                            },
+                            setValue : function(val) {
+                                fieldControl.datepicker('setDate', val);
+                            },
+                            hide : function(params) {
+                                fieldContainer.addClass("hide");
+                            }                            
+                        }
+                    };     
+                    
+                    var selectFieldOutput = function(fieldControl) {
+                        return {
+                            hide : function(params) {
+                                fieldContainer.addClass("hide");
+                            }                            
+                        }
+                    }   
+                    
+                    
+                    
+                    if (fieldName === "Description") {
+                        fieldControl = fieldContainer.find('.custom-editable');
+                        
+                        return richTextFieldOutput(fieldControl); 
+                    }    
+                    if (fieldName === "AssignedTo") {
+                        fieldControl = fieldContainer.find('input[type="text"]');
+                        
+                        return peopleFieldOutput(fieldControl);
+                    }
+                    
+                    if (fieldName === "Status") {
+                        fieldControl = fieldContainer.find('select');
+                        
+                        return selectFieldOutput(fieldControl);
+                    }
+                    
+                    if (fieldName === "DueDate") {
+                        fieldControl = fieldContainer.find('input[type="text"]');
+                        
+                        return dateFieldOutput(fieldControl);
+                    }
+                    
+                    if (fieldName === "Body") {
+                        fieldControl = fieldContainer.find('.custom-editable');
+                        
+                        return richTextFieldOutput(fieldControl); 
+                    } 
+                    
+                    if (fieldName === "Justification") {
+                        fieldControl = fieldContainer.find('.custom-editable');
+                        
+                        return richTextFieldOutput(fieldControl); 
+                    }                                      
+                } 
+                
+                var getAction = function(formFields, actionName) {
+                    var fieldControl = null;
+                    
+                    var buttonActionOutput = function(fieldControl) {
+                        return {
+                            getControl : function () {
+                                return fieldControl;
+                            },
+                            hide : function() {
+                                $(fieldControl).addClass("hide");                    
+                            }
+                        } 
+                    } 
+                    
+                    if (actionName === "deleteBtn") {
+                        fieldControl = $("#btnDeleteTask");
+                        
+                        return buttonActionOutput(fieldControl);
+                    }
+                    
+                    if (actionName === "saveBtn") {
+                        fieldControl = $("#btnSaveTask");
+                        
+                        return buttonActionOutput(fieldControl);
+                    } 
+                }  
+                
+                var enableEditMode = function() {
+                    console.log("Edit form mode");
+                }
+                
+                return {
+                    enableNewMode : enableNewMode,    
+                    getField : getField,                
+                    disableEditMode : disableEditMode,                    
+                    enableEditMode : enableEditMode
+                }
+            })();
+            
+            var validate = function() {                 
                 var isValid = false;
                 if (_taskModel) {
                     console.log("validating detail model");
@@ -192,8 +413,7 @@
                 }
                 
                 return isValid;
-            };
-            
+            };            
             
             return {
                 init :  init,
@@ -206,6 +426,16 @@
             Handlebars.registerHelper("inc", function(value, options)
             {
                 return parseInt(value) + 1;
+            });
+            
+            Handlebars.registerHelper("showDate", function(value, options)
+            {
+                return utils.convertDate(value, false, true);
+            });
+            
+            Handlebars.registerHelper("showDateRemainingDays", function(value, options)
+            {
+                return 30;
             });
             
             // Select option
@@ -235,23 +465,23 @@
             var m = s.taskModal;
             
             // binding list Events
-            $(m.detailContainerID).find("#btnSaveTask").on("click", function() {
-                if (taskDetailModule.validate()) {
-                    console.log("Saving data");    
-                } else {
-                    console.log("Invalid data");
-                }                 
-            });
+            // $(m.detailContainerID).find("#btnSaveTask").on("click", function() {
+            //     if (taskDetailModule.validate()) {
+            //         console.log("Saving data");    
+            //     } else {
+            //         console.log("Invalid data");
+            //     }                 
+            // });
             
-            $(m.detailContainerID).find("#btnDeleteTask").on("click", function() {
-                 console.log("Deleting data");
-            });
+            // $(m.detailContainerID).find("#btnDeleteTask").on("click", function() {
+            //      console.log("Deleting data");
+            // });
             
             // initialize datePicker control
-            $(m.detailContainerID).find('.bootstrap-date').datepicker({
-                language: "es",
-                autoclose: true
-            }); 
+            // $(m.detailContainerID).find('.bootstrap-date').datepicker({
+            //     language: "es",
+            //     autoclose: true
+            // }); 
                 
         }
 
@@ -259,4 +489,4 @@
 
     }
 
-})(jQuery, console, Handlebars);
+})(jQuery, console, Handlebars, binnacle.utils);
