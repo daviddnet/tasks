@@ -40,9 +40,13 @@
 .task-detail .custom-editable {
     height: auto;
     min-height: 100px;
+    max-height: 200px;
+    height: auto;
+    overflow-y: auto;
 }
     .task-detail .custom-editable.small {        
         min-height: 50px;
+        max-height: 150px;        
     }
 
 .task-detail .control-label {

@@ -10,7 +10,7 @@ binnacle.utils = {
             .replace(/'/g, '&#39;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/\//g, '&#x2F;');
+            //.replace(/\//g, '&#x2F;');
     },
     htmlUnescape : function(value) {
         return String(value)
@@ -18,8 +18,7 @@ binnacle.utils = {
             .replace(/&#39;/g, "'")
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')            
-            
+            .replace(/&amp;/g, '&')     
     },
     
     convertDate: function (inputFormat, showHour, ignoreUTC) {

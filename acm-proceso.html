@@ -18,63 +18,6 @@
     <script type="text/javascript" src="resources/js/task.js" ></script>
 </head>
 <body>
-    <!-- Handlebars old template -->
-    <script id="entry-template-old" type="text/x-handlebars-template">
-        <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="heading{{id}}">
-                <h4 class="panel-title">
-                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse{{id}}" aria-controls="collapse{{id}}">Tarea #{{id}}
-                    </a>
-                    <button type="button" class="remove-task close" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </h4>
-            </div>
-            <div id="collapse{{id}}" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading{{id}}">
-                <div class="panel-body part-task">
-                    {{#each form}}
-                    <div class="form-group {{css}}">
-                        <label class="col-sm-2 control-label font-bold">{{label}}</label>
-                        <div class="col-sm-10">
-                            {{#each fields}}
-                                {{{control this}}}
-                            {{/each}}
-                        </div>
-                    </div>
-                    {{/each}}
-                </div>
-            </div>
-        </div>
-    </script>    
-
-    <!-- Handlebars History template -->
-    <script id="history-template" type="text/x-handlebars-template">
-        <div id="{{fieldName}}_History" class="history panel panel-default">
-            <div class="history-header panel-heading">
-                <h4 class="panel-title">
-                    <a href="#{{fieldName}}_HistoryCollapse_{{id}}" data-toggle="collapse">Historial <span class="caret"></span></a>
-                </h4>
-            </div>
-            <div id="{{fieldName}}_HistoryCollapse_{{id}}" class="history-body collapse out">
-                {{#each comments}}
-            <div class="history-item panel panel-default">
-
-                <div class="panel-body">
-                    <div class="col-sm-6"><small><span class="date">{{modifiedFormated}}</span></small></div>
-                    <div class="col-sm-6 ">
-                        <div class="userName"><a class="pull-right" href="/_layouts/15/userdisp.aspx?ID={{userId}}">{{userName}}</a></div>
-                    </div>
-
-                    <div class="col-sm-12">
-                        {{{content}}}
-                    </div>
-                </div>
-
-            </div>
-                {{/each}}
-            </div>
-        </div>
-    </script>   
     
     <!--Handlebarse Task List Template-->
     <script id="task-list-template" type="text/x-handlebars-template">        
@@ -85,6 +28,9 @@
             </div>
             <div class="panel-body">                    
                 <a href="#" class="btn btn-primary task-add-btn">Agregar tarea</a>
+                <div class="task-messages">
+                    
+                </div>
                 <div class="task-list list-group">
                     {{#each .}}                       
                     <a href="#" class="task-item list-group-item" data-taskId="{{taskId}}">                            
@@ -94,10 +40,10 @@
                             <span class="assigned-to">{{assignedTo.displayName}}</span> 
                         </h4>
                         <span class="list-group-item-text">
-                            <strong>Vence el:</strong> {{ showDate dueDate }} <span>- Restan <span class="badge">{{ showDateRemainingDays dueDate }} días</span></span><br>
+                            <strong>Vence el:</strong> {{ showDate dueDate }} <span>- <span class="badge">{{ showDateRemainingDays dueDate }} días</span></span><br>
                         </span>
                         <div class="list-group-item-text task-description">
-                        {{{fullDescription}}}    
+                        {{{unescapeHtml fullDescription}}}    
                         </div>
                     </a>     
                     {{/each}}  
@@ -143,7 +89,7 @@
                             <div class="form-group" data-taskField="DueDate" >
                                 <label class="col-sm-3 control-label font-bold">Fecha de compromiso</label>
                                 <div class="col-sm-9">
-                                    <input type="text" class="form-control bootstrap-date" placeholder="dd/mm/aaaa" value="{{dueDate}}">
+                                    <input type="text" class="form-control bootstrap-date" placeholder="dd/mm/aaaa" value="{{showDate dueDate}}">
                                 </div>            
                             </div> 
                             
@@ -199,27 +145,33 @@
     <script>
         $(document).ready(function() {            
             //setting initial variables            
-            var model = [
-                {
-                    taskId : "c1",
-                    taskState : "created",
-                    taskStatus : "Abierta",
-                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
-                    miniDescription : "Aquí descripción tarea 1",
-                    assignedTo : {
-                        displayName : "Juan David Maya",
-                        loginName : "lagashcoldev\juandavidm"                        
-                    },
-                    dueDate : "2016-05-25T23:01:34.975Z",                    
-                    body : ""
-                }                    
-            ];            
+            // var model = [
+            //     {
+            //         taskId : "c1",
+            //         taskState : "created",
+            //         taskStatus : "Abierta",
+            //         fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+            //         miniDescription : "Aquí descripción tarea 1",
+            //         assignedTo : {
+            //             displayName : "Juan David Maya",
+            //             loginName : "lagashcoldev\juandavidm"                        
+            //         },
+            //         dueDate : "2016-05-25T23:01:34.975Z",                    
+            //         body : ""
+            //     }                    
+            // ]; 
+            
+            var model = [];          
             
             // Initializing Task Component
             var taskAppOptions = 
             {
                 model : model,                
-                currentUserId : 0                 
+                currentUserId : 0,     
+                permissions : {
+                    allowAddTasks : true,
+                    allowEditAllTasks : false    
+                },                     
             }            
             
             var binnacle = window.binnacle || {};
