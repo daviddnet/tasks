@@ -322,7 +322,8 @@
                     $(formFields).find('.bootstrap-date').datepicker({
                         language: "es",
                         autoclose: true,
-                        orientation : "auto top"
+                        orientation : "auto top",
+                        format: 'dd/mm/yyyy'
                     }); 
                 };
                 

@@ -35,17 +35,18 @@ binnacle.utils = {
             return strTime;
         }
 
+        var newFormat = inputFormat;
         if (inputFormat && ignoreUTC) {
-            inputFormat = inputFormat.replace('T', ' ')
+            newFormat =  inputFormat.substring(0,10).replace(/-/g,'/');
+        }        
+
+        var d = new Date(newFormat);
+        var output = [pad(d.getDate()), pad(d.getMonth() + 1), d.getFullYear()].join('/');
+        if (showHour) {
+            output += " " + getHour(new Date(inputFormat));
         }
 
-        var d = new Date(inputFormat);
-        var hour = [pad(d.getDate()), pad(d.getMonth() + 1), d.getFullYear()].join('/');
-        if (showHour)
-            hour += " " + getHour(d);
-
-
-        return hour;
+        return output;
     },
      
 }
