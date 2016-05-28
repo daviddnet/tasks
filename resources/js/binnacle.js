@@ -48,6 +48,18 @@ binnacle.utils = {
 
         return output;
     },
-     
+    dateIsExpired : function(dueDate) {                
+        var testDate = new Date(dueDate);                
+        testDate.setHours(0, 0, 0, 0);
+        var todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+
+        return (testDate.getTime() < todayDate.getTime())
+    },
+    getDateAsInt : function(isoStrDate) {
+        var date = new Date(isoStrDate);
+        date.setHours(0, 0, 0, 0);
+        return date.getTime(); 
+    }     
 }
 

@@ -21,6 +21,9 @@
                     keyboard: false
                 },    
             },
+            restrictions : {
+                minimumTasksRequired : 1  
+            },
             permissions : {
                 allowAddTasks : true,
                 allowEditAllTasks : false    
@@ -28,9 +31,7 @@
             resources : {
                 "tasks.x1" : "Data 1",
                 "tasks.x2" : "Data 2"
-            }           
-            
-            //onSomeEvent: function() {}
+            }
         }
 
         var plugin = this;
@@ -45,7 +46,6 @@
             var t = s.templates;
             var sourceTaskList   = $(t.listTemplateID).html();
             t.listTemplate = Handlebars.compile(sourceTaskList);
-            
             var sourceTaskDetail = $(t.detailTemplateID).html();
             t.detailTemplate = Handlebars.compile(sourceTaskDetail);
             
@@ -53,14 +53,12 @@
             if (s.model) {
                 _allowInit = true;
             } else {
-                console.log("Unable to initialize tasks component");
+                console.log("Unable to initialize tasks component.");
             }
             
             // Register handleBars Helpers
             registerHandleBarHelpers();            
         }
-        
-        
 
         plugin.listTasks = function() {
             listTasks();
@@ -75,12 +73,51 @@
         }      
         
         plugin.validate = function() {
-            //TODO: Validates businessRules
-            return true;    
+            var s = plugin.settings;
+            var r = s.restrictions;
+            var m = s.model;
+            
+            if (m.length >= r.minimumTasksRequired) {
+                return true;
+            } else {
+                clearMessages();
+                addMessage("Debes agregar al menos una tarea",messageType.error);
+                return false;
+            }
+        }
+        
+        plugin.getLastTaskDueDate = function() {
+            var lastDate = null;
+            var s = plugin.settings;
+            var m = s.model;
+            
+            //TODO: a este método le faltan pruebas, no está ordenando bien
+            if (m && m.length > 0) {
+                // sort tasks by dueDate
+                var sortedTasks = m.slice();
+                sortedTasks.sort(function(a, b) {
+                    return parseFloat(utils.getDateAsInt(b.dueDate)) - 
+                    parseFloat(utils.getDateAsInt(a.dueDate));        
+                });
+                
+                lastDate = new Date(sortedTasks[0].dueDate);  
+                
+                //console.dir(sortedTasks); 
+            }
+            
+            return lastDate;
         } 
         
-        var addMessage = function(message) {
-            var output = '<div class="task-message">' + message + '</div>';
+        var messageType = {
+            info : "info",
+            warning : "warning",
+            error : "error"
+        }
+        
+        var addMessage = function(message, type) {
+            if (!type) { type = "";}
+            
+            var output = '<div class="task-message ' + type + '">' + message + '</div>';
             $(el).find(".task-messages").append(output);    
         }
         
@@ -94,6 +131,17 @@
                 var s = plugin.settings;
                 var p = s.permissions;
                 
+                var getNoDeletedTasks = function() {
+                    var output = [];
+                    $.each(s.model, function(index, value) {
+                        if (value.taskState != "deleted") {
+                            output.push(value);
+                        }
+                    });
+                    
+                    return output;
+                }
+                
                 console.log("loading tasks");
                 var tasks = getNoDeletedTasks();
                 var outputTemplate = s.templates.listTemplate(tasks);
@@ -103,29 +151,17 @@
                 
                 clearMessages();
                 if (s.model.length == 0) {
-                    addMessage("No hay tareas creadas.");
+                    addMessage("No hay tareas creadas.", messageType.info);
                 } 
                 
                 // is addTask button enabled?
                 if (!p.allowAddTasks) {
                     $(el).find(".task-add-btn").addClass("hide");
-                    addMessage("No tiene permitido agregar nuevas tareas.");                
+                    addMessage("No tiene permitido agregar nuevas tareas.", messageType.warning);                
                 } 
                 
                 registerTaskListEvents();                
             }            
-        }
-        
-        var getNoDeletedTasks = function() {
-            var s = plugin.settings;
-            var output = [];
-            $.each(s.model, function(index, value) {
-                if (value.taskState != "deleted") {
-                    output.push(value);
-                }
-            })
-            
-            return output;
         }
         
         var newTask = function() {
@@ -142,20 +178,6 @@
             }            
         }
         
-        var deleteTask = function(taskModel) {
-            var s = plugin.settings;
-            
-            if (taskModel.taskState === "added") {
-                // delete
-                //s.model
-                //taskModel
-            }
-            else {
-                // flagged for deletion server side
-                
-            }
-        }
-        
         var addTask = function(taskModel) {
             var el = plugin.el;
             var s = plugin.settings;
@@ -169,8 +191,22 @@
                 s.model.push(taskModel);
                 listTasks();    
             }
+        }    
+        
+        var deleteTask = function(taskId) {
+            var s = plugin.settings;
             
-        }        
+            var task = $.grep(s.model, function(e){  return (e.taskId == taskId) })[0];
+            
+            if (task && task.taskState === "added") {
+                // delete task (filtering list model)
+                s.model = $.grep(s.model, function(e){  return (e.taskId != taskId) });
+            }
+            else {
+                // flagged for deletion server side
+                task.taskState = "deleted";
+            }
+        }       
         
         var showTaskDialog = function(taskId) {
             var s = plugin.settings;
@@ -193,36 +229,39 @@
                         
             // opens up Modal Dialog      
             var formFields = detail.find(".task-detail").first();
-            taskDetailModule.init(task, formFields, m.detailContainerID);       
-            $(m.detailContainerID).modal(m.options);
-            $(m.detailContainerID).off("hidden.bs.modal");
-            $(m.detailContainerID).on("hidden.bs.modal", function () {
+            taskDetailModule.init(task, formFields, function(type) {
+                // finishing event handler
+                
                 var s = plugin.settings;
-                var m = s.model;
-                console.log("closing modal");
+                var m = s.taskModal;
                 
-                var model = taskDetailModule.getModel();
+                console.log("event result");
+                //console.log(task);
                 
-                if (model.validated) {
-                    var data = model.data;
-                    if (data.taskState === "new") {
-                        addTask(data);    
+                if (type === "saving") {
+                    if (task.taskState === "new") {
+                        addTask(task);    
                     }
                     else {
                         listTasks();
-                        //var existingModel = $.grep(m, function(t){ return t.taskId == data.taskId; });
-                        //console.log(existingModel);
                     }
-                        
+                }
+                else if (type === "deleting") {
+                    deleteTask(task.taskId);
+                    listTasks();
                 }
                 
-                console.log(model);
-            });
+                // hides Modal
+                $(m.detailContainerID).modal("hide");
+            });    
+            
+            // show Modal   
+            $(m.detailContainerID).modal(m.options);
         }
         
         var getDefaultTaskValues = function() {
             return {
-                taskId : "n",
+                taskId : "",
                 taskState : "new",
                 taskStatus : "Abierta",
                 fullDescription : "",
@@ -239,8 +278,8 @@
         
         var taskDetailModule = (function() {
             var _taskModel = null; 
-            var _formFields = null; 
-            var _detailContainerID = null;
+            var _formFields = null;
+            var _finishingCallBack = null;
             
             var fields = {
                 'description' : 'Description',
@@ -254,27 +293,17 @@
                 "deleteBtn" : "DeleteBtn"
             }
             
-            var init = function(taskModel, formFields, detailContainerID) {
+            var init = function(taskModel, formFields, finishingCallBack) {
                 console.log("Initializing task Detail Module");
                 _taskModel = taskModel;
-                _formFields = formFields
-                _detailContainerID = detailContainerID;
+                _formFields = formFields;
+                _finishingCallBack = finishingCallBack;
                 
-                console.log(_taskModel);
-                console.log(_formFields);
+                // console.log(_taskModel);
+                // console.log(_formFields);
                 
-                formDomManipulation.enableNewMode(_taskModel, _formFields, savingActionEvent);
-                // if (_taskModel.taskState === 'new') {
-                //     formDomManipulation.enableNewMode(_taskModel, _formFields, savingActionEvent);
-                // }
-                // else {
-                //     formDomManipulation.enableEditMode();
-                // }
+                formDomManipulation.init(_taskModel, _formFields, savingActionEvent, deletingActionEvent);
             };
-            
-            var closeModal = function() {
-                $(_detailContainerID).modal("hide");
-            }
             
             var savingActionEvent = function() {
                 console.log("Saving data");
@@ -286,51 +315,64 @@
                 // console.log(descriptionField.getValue());
                 // console.log(assignedToField.getValue());
                 // console.log(dueDateField.getValue());
-                // console.log(bodyField.getValue());       
-                
-                // it's new Task
-                if (_taskModel.taskState === "new" || _taskModel.taskState === "added") {
-                    _taskModel.fullDescription = descriptionField.getValue();
-                    _taskModel.miniDescription = descriptionField.getText(255);
-                    _taskModel.assignedTo.displayName = assignedToField.getValue();
-                    _taskModel.assignedTo.loginName = assignedToField.getValue();         
-                    _taskModel.dueDate = dueDateField.getValue();     
-                    _taskModel.body = bodyField.getValue();
+                // console.log(bodyField.getValue());
+                       
+                var validated = validate();
+                if (validated) {
+                    // it's new Task
+                    if (_taskModel.taskState === "new" || _taskModel.taskState === "added") {
+                        _taskModel.fullDescription = descriptionField.getValue();
+                        _taskModel.miniDescription = descriptionField.getText(255);
+                        _taskModel.assignedTo.displayName = assignedToField.getValue();
+                        _taskModel.assignedTo.loginName = assignedToField.getValue();         
+                        _taskModel.dueDate = dueDateField.getValue();     
+                        _taskModel.body = bodyField.getValue();
+                        
+                        if (utils.dateIsExpired(_taskModel.dueDate)) {
+                            _taskModel.taskStatus = "Vencida";
+                        } else {
+                            if (bodyField.isEmpty()) {
+                                _taskModel.taskStatus = "Abierta";
+                            }
+                            else {
+                                _taskModel.taskStatus = "En progreso";
+                            }              
+                        }
+                    }    
                     
-                    if (bodyField.isEmpty()) {
-                        _taskModel.taskStatus = "Abierta";
+                    console.log(_taskModel); 
+                    
+                    if (_finishingCallBack) {
+                        _finishingCallBack("saving");    
                     }
-                    else {
-                        _taskModel.taskStatus = "En progreso";
-                    }                    
                     
-                }    
+                } 
+                else {
+                    _finishingCallBack("");
+                }
+            }
+            
+            var deletingActionEvent = function() {
+                console.log("Deleting data");
                 
-                console.log(_taskModel); 
-                
-                closeModal();
-            }           
+                if (_finishingCallBack) {
+                    _finishingCallBack("deleting");    
+                }
+            }       
             
             
             var formDomManipulation = (function() {
-                var disableEditMode = function() {
-                    console.log("Unabling Edit form");
-                }
                 
-                var init = function(formFields) {
+                var init = function(taskModel, formFields, saveActionCallBack, deleteActionCallBack) {
+                    console.log("Initializing Form");
+                    
                     // initialize datePicker control
                     $(formFields).find('.bootstrap-date').datepicker({
                         language: "es",
                         autoclose: true,
                         orientation : "auto top",
                         format: 'dd/mm/yyyy'
-                    }); 
-                };
-                
-                var enableNewMode = function(taskModel, formFields, saveActionCallBack) {
-                    console.log("New form mode");
-                    
-                    init(formFields);
+                    });
                     
                     var justificationField = getField(formFields, "Justification");
                     var statusField = getField(formFields, "Status");
@@ -356,10 +398,13 @@
                     deleteBtnAction.getControl().on('click', function() {
                         var deleteAction = confirm("¿Estás seguro de querer eliminar esta tarea?");
                         if (deleteAction == true) {
+                            if (deleteActionCallBack) {
+                                deleteActionCallBack();
+                                //deleteTask(taskModel.taskId);    
+                            }
                             
-                        } else {
                             
-                        }                        
+                        }                       
                     });                   
                     
                     // var statusValues = [{key : "k1", value : "0"}];
@@ -528,10 +573,8 @@
                 // }
                 
                 return {
-                    enableNewMode : enableNewMode,    
-                    getField : getField,                
-                    disableEditMode : disableEditMode,                    
-                    // enableEditMode : enableEditMode
+                    init : init,    
+                    getField : getField
                 }
             })();
             
@@ -543,18 +586,10 @@
                 }
                 
                 return isValid;
-            }; 
-            
-            var getModel = function() {
-                return {
-                    "validated" : true,
-                    "data" : _taskModel
-                }
-            }           
+            };     
             
             return {
-                init :  init,                
-                getModel : getModel    
+                init :  init
             }
         })();
         
@@ -611,8 +646,29 @@
             {
                 var unescaped = utils.htmlUnescape(value);
                 return new Handlebars.SafeString(unescaped);
-                
             });
+            
+            Handlebars.registerHelper("getLastTask", function(value, options)
+            {
+                var lastDate = plugin.getLastTaskDueDate();
+                var output = "";
+                
+                if (lastDate) {
+                    var lastDateStr = utils.convertDate(lastDate.toISOString(), false, true);
+                    if (utils.dateIsExpired(lastDate.toISOString())) {
+                        output = new Handlebars.SafeString("La última tarea finalizaba el <strong>" + lastDateStr + "</strong>");    
+                    } else {
+                        output = new Handlebars.SafeString("La última tarea finaliza el <strong>" + lastDateStr + "</strong>");
+                    }
+                    
+                    
+                }
+                  
+                 
+                return output;
+            });
+            
+            
         }
         
         var registerTaskListEvents = function() {
@@ -628,7 +684,6 @@
         }
 
         init();
-
     }
 
 })(jQuery, console, Handlebars, binnacle.utils);

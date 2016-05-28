@@ -29,6 +29,7 @@
 
 .task-list .task-description {
     color: #666;
+    margin-top: 10px;
 }
 
 .task-list .task-status {
