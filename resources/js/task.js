@@ -50,11 +50,14 @@
             t.detailTemplate = Handlebars.compile(sourceTaskDetail);
             
             // validations                  
-            if (s.model) {
-                _allowInit = true;
-            } else {
-                console.log("Unable to initialize tasks component.");
-            }
+            // if (s.model) {
+            //     _allowInit = true;
+            // } else {
+            //     console.log("Unable to initialize tasks component.");
+            // }
+            
+            _allowInit = true;
+            if (!s.model) { s.model = []; }
             
             // Register handleBars Helpers
             registerHandleBarHelpers();            
@@ -88,19 +91,17 @@
         
         plugin.getLastTaskDueDate = function() {
             var lastDate = null;
-            var s = plugin.settings;
-            var m = s.model;
             
             //TODO: a este método le faltan pruebas, no está ordenando bien
-            if (m && m.length > 0) {
+            var tasks = getTasks();
+            if (tasks && tasks.length > 0) {
                 // sort tasks by dueDate
-                var sortedTasks = m.slice();
-                sortedTasks.sort(function(a, b) {
+                tasks.sort(function(a, b) {
                     return parseFloat(utils.getDateAsInt(b.dueDate)) - 
                     parseFloat(utils.getDateAsInt(a.dueDate));        
                 });
                 
-                lastDate = new Date(sortedTasks[0].dueDate);  
+                lastDate = new Date(tasks[0].dueDate);  
                 
                 //console.dir(sortedTasks); 
             }
@@ -131,26 +132,15 @@
                 var s = plugin.settings;
                 var p = s.permissions;
                 
-                var getNoDeletedTasks = function() {
-                    var output = [];
-                    $.each(s.model, function(index, value) {
-                        if (value.taskState != "deleted") {
-                            output.push(value);
-                        }
-                    });
-                    
-                    return output;
-                }
-                
                 console.log("loading tasks");
-                var tasks = getNoDeletedTasks();
+                var tasks = getTasks();
                 var outputTemplate = s.templates.listTemplate(tasks);
                 
                 $(el).empty();
                 $(el).append(outputTemplate);   
                 
                 clearMessages();
-                if (s.model.length == 0) {
+                if (!tasks || tasks.length == 0) {
                     addMessage("No hay tareas creadas.", messageType.info);
                 } 
                 
@@ -162,6 +152,19 @@
                 
                 registerTaskListEvents();                
             }            
+        }
+        
+        var getTasks = function() {
+            var s = plugin.settings;
+            
+            var output = [];
+            $.each(s.model, function(index, value) {
+                if (value.taskState != "deleted") {
+                    output.push(value);
+                }
+            });
+            
+            return output;
         }
         
         var newTask = function() {
@@ -253,7 +256,7 @@
                 
                 // hides Modal
                 $(m.detailContainerID).modal("hide");
-            });    
+            });
             
             // show Modal   
             $(m.detailContainerID).modal(m.options);
@@ -285,12 +288,14 @@
                 'description' : 'Description',
                 'assignedTo' : 'AssignedTo',
                 'dueDate' : 'DueDate',
-                'body' : 'Body'                                 
+                'body' : 'Body',
+                "status" : "Status",
+                "justification" : "Justification"                                 
             }
             
             var actionControls = {
-                "saveBtn" : "SaveBtn",
-                "deleteBtn" : "DeleteBtn"
+                "saveBtn" : "saveBtn",
+                "deleteBtn" : "deleteBtn"
             }
             
             var init = function(taskModel, formFields, finishingCallBack) {
@@ -303,6 +308,30 @@
                 // console.log(_formFields);
                 
                 formDomManipulation.init(_taskModel, _formFields, savingActionEvent, deletingActionEvent);
+                
+                var justificationField = formDomManipulation.getField(formFields, fields.justification);
+                var statusField = formDomManipulation.getField(formFields, fields.status);
+                var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
+                var deleteBtnAction = formDomManipulation.getAction(formFields, actionControls.deleteBtn);
+                var saveBtnAction = formDomManipulation.getAction(formFields, actionControls.saveBtn);
+                
+                if (taskModel.taskState === "new") {
+                    justificationField.hide();   
+                    statusField.hide();
+                    deleteBtnAction.hide();      
+                }                      
+                else if (taskModel.taskState === "added") {
+                    justificationField.hide();   
+                    statusField.hide();
+                }
+                else if (taskModel.taskState === "created" || taskModel.taskState === "modified" ) {
+                    justificationField.hide();
+                    
+                    var statusOptions = ["Abierta","En progreso", "Cumplida","No cumplida"];
+                    statusField.setItems(statusOptions, taskModel.taskStatus); 
+                    
+                    dueDateField.readOnly();
+                }
             };
             
             var savingActionEvent = function() {
@@ -311,6 +340,7 @@
                 var assignedToField = formDomManipulation.getField(_formFields, fields.assignedTo);
                 var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
                 var bodyField = formDomManipulation.getField(_formFields, fields.body);
+                var statusField = formDomManipulation.getField(_formFields, fields.status);
                 
                 // console.log(descriptionField.getValue());
                 // console.log(assignedToField.getValue());
@@ -338,6 +368,24 @@
                                 _taskModel.taskStatus = "En progreso";
                             }              
                         }
+                    }
+                    else if(_taskModel.taskState === "created" || _taskModel.taskState === "modified") {
+                        _taskModel.fullDescription = descriptionField.getValue();
+                        _taskModel.miniDescription = descriptionField.getText(255);
+                        _taskModel.assignedTo.displayName = assignedToField.getValue();
+                        _taskModel.assignedTo.loginName = assignedToField.getValue();         
+                        //_taskModel.dueDate = dueDateField.    
+                        _taskModel.body = bodyField.getValue();
+                        _taskModel.taskState = "modified";
+                        _taskModel.taskStatus = statusField.getValue();
+                        
+                        
+                        if (_taskModel === "Abierta") {
+                            if (!bodyField.isEmpty()) {
+                                _taskModel.taskStatus = "En progreso";
+                            }    
+                        }
+                         
                     }    
                     
                     console.log(_taskModel); 
@@ -366,6 +414,9 @@
                 var init = function(taskModel, formFields, saveActionCallBack, deleteActionCallBack) {
                     console.log("Initializing Form");
                     
+                    var deleteBtnAction = getAction(formFields, "deleteBtn");
+                    var saveBtnAction = getAction(formFields, "saveBtn");
+                    
                     // initialize datePicker control
                     $(formFields).find('.bootstrap-date').datepicker({
                         language: "es",
@@ -373,21 +424,6 @@
                         orientation : "auto top",
                         format: 'dd/mm/yyyy'
                     });
-                    
-                    var justificationField = getField(formFields, "Justification");
-                    var statusField = getField(formFields, "Status");
-                    var deleteBtnAction = getAction(formFields, "deleteBtn");
-                    var saveBtnAction = getAction(formFields, "saveBtn");
-                    
-                    if (taskModel.taskState === "new") {
-                        justificationField.hide();   
-                        statusField.hide();
-                        deleteBtnAction.hide();      
-                    }                      
-                    else if (taskModel.taskState === "added") {
-                        justificationField.hide();   
-                        statusField.hide();
-                    }
                     
                     saveBtnAction.getControl().on('click', function() {
                         if (saveActionCallBack) {
@@ -402,8 +438,6 @@
                                 deleteActionCallBack();
                                 //deleteTask(taskModel.taskId);    
                             }
-                            
-                            
                         }                       
                     });                   
                     
@@ -444,6 +478,9 @@
                             isEmpty : function() {
                                 var text = fieldControl.text().trim();
                                 return (text == "" ? true : false);
+                            },
+                            readOnly : function() {
+                                $(fieldControl).attr("contenteditable", false);
                             }                           
                         }
                     }; 
@@ -458,6 +495,9 @@
                             },
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
+                            },
+                            readOnly : function() {
+                                fieldControl.attr('readonly', true);
                             }                            
                         }
                     };  
@@ -472,6 +512,9 @@
                             },
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
+                            },
+                            readOnly : function() {
+                                fieldControl.attr('readonly', true);
                             }                            
                         }
                     };   
@@ -489,24 +532,42 @@
                             setValue : function(val) {
                                 fieldControl.datepicker('setDate', val);
                             },
-                            hide : function(params) {
+                            hide : function() {
                                 fieldContainer.addClass("hide");
+                            },
+                            readOnly : function() {
+                                fieldControl.attr('readonly', true);
+                                fieldControl.prop('disabled', true);
                             }                            
                         }
                     };     
                     
                     var selectFieldOutput = function(fieldControl) {
                         return {
+                            getValue : function() {
+                                return fieldControl.val();
+                            },
+                            setItems : function(items, selectedValue) {
+                                $.each(items, function(i, value) {
+                                    if (value === selectedValue) {
+                                        fieldControl.append($('<option selected>').text(value).attr('value', value));
+                                    } else {
+                                        fieldControl.append($('<option>').text(value).attr('value', value));    
+                                    }
+                                });
+                            },
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
+                            },
+                            readOnly : function() {
+                                fieldControl.attr('readonly', true);
                             }                            
                         }
                     }   
                     
-                    
-                    
                     if (fieldName === "Description") {
                         fieldControl = fieldContainer.find('.custom-editable');
+                        
                         
                         return richTextFieldOutput(fieldControl); 
                     }    
@@ -574,7 +635,8 @@
                 
                 return {
                     init : init,    
-                    getField : getField
+                    getField : getField,
+                    getAction : getAction
                 }
             })();
             
