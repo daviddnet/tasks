@@ -25,6 +25,7 @@
                 minimumTasksRequired : 1  
             },
             permissions : {
+                readOnlyTasks : false,
                 allowAddTasks : true,
                 allowEditAllTasks : false    
             },            
@@ -148,6 +149,11 @@
                 if (!p.allowAddTasks) {
                     $(el).find(".task-add-btn").addClass("hide");
                     addMessage("No tiene permitido agregar nuevas tareas.", messageType.warning);                
+                }
+                
+                if(p.readOnlyTasks != null && p.readOnlyTasks === true) {
+                    $(el).find(".task-add-btn").addClass("hide");
+                    addMessage("Ya no puedes modificar las tareas.", messageType.info);
                 } 
                 
                 registerTaskListEvents();                
@@ -232,7 +238,7 @@
                         
             // opens up Modal Dialog      
             var formFields = detail.find(".task-detail").first();
-            taskDetailModule.init(task, formFields, function(type) {
+            taskDetailModule.init(task, s.permissions, formFields, function(type) {
                 // finishing event handler
                 
                 var s = plugin.settings;
@@ -281,8 +287,10 @@
         
         var taskDetailModule = (function() {
             var _taskModel = null; 
+            var _permissions = null;
             var _formFields = null;
             var _finishingCallBack = null;
+            var _justificationIsRequired = false;
             
             var fields = {
                 'description' : 'Description',
@@ -295,25 +303,38 @@
             
             var actionControls = {
                 "saveBtn" : "saveBtn",
-                "deleteBtn" : "deleteBtn"
+                "deleteBtn" : "deleteBtn",
+                "changeDueDateBtn" : "changeDueDateBtn",
+                "outDueDateBtn" : "outDueDateBtn"
             }
             
-            var init = function(taskModel, formFields, finishingCallBack) {
+            var init = function(taskModel, permissions, formFields, finishingCallBack) {
                 console.log("Initializing task Detail Module");
                 _taskModel = taskModel;
+                _permissions = permissions;
                 _formFields = formFields;
                 _finishingCallBack = finishingCallBack;
+                _justificationIsRequired = false;
                 
                 // console.log(_taskModel);
                 // console.log(_formFields);
                 
-                formDomManipulation.init(_taskModel, _formFields, savingActionEvent, deletingActionEvent);
+                formDomManipulation.init(_taskModel, _formFields, savingActionEvent, deletingActionEvent, 
+                    changeDueDateActionEvent, outDueDateActionEvent);
                 
+                var descriptionField = formDomManipulation.getField(formFields, fields.description);
+                var assignedToField = formDomManipulation.getField(formFields, fields.assignedTo);
                 var justificationField = formDomManipulation.getField(formFields, fields.justification);
                 var statusField = formDomManipulation.getField(formFields, fields.status);
-                var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
+                var bodyField = formDomManipulation.getField(formFields, fields.body);
+                var dueDateField = formDomManipulation.getField(formFields, fields.dueDate);
                 var deleteBtnAction = formDomManipulation.getAction(formFields, actionControls.deleteBtn);
                 var saveBtnAction = formDomManipulation.getAction(formFields, actionControls.saveBtn);
+                var changeDueDateBtnAction = formDomManipulation.getAction(formFields, actionControls.changeDueDateBtn);
+                var outDueDateBtnAction = formDomManipulation.getAction(formFields, actionControls.outDueDateBtn);
+                
+                changeDueDateBtnAction.hide();
+                outDueDateBtnAction.hide();
                 
                 if (taskModel.taskState === "new") {
                     justificationField.hide();   
@@ -325,13 +346,57 @@
                     statusField.hide();
                 }
                 else if (taskModel.taskState === "created" || taskModel.taskState === "modified" ) {
-                    justificationField.hide();
-                    
                     var statusOptions = ["Abierta","En progreso", "Cumplida","No cumplida"];
-                    statusField.setItems(statusOptions, taskModel.taskStatus); 
+                    var readOnlyMode = function(hideDeleteBtn) {
+                        descriptionField.readOnly();
+                        assignedToField.readOnly();
+                        statusField.readOnly();
+                        bodyField.readOnly();
+                        saveBtnAction.hide();
+                        
+                        if (hideDeleteBtn === true) {
+                            deleteBtnAction.hide();
+                        }
+                        
+                        statusOptions = [taskModel.taskStatus];
+                    };
                     
-                    dueDateField.readOnly();
+                    if (!taskModel.justification) {
+                        justificationField.hide();    
+                    }
+                    else {
+                        justificationField.setValue(taskModel.justification);
+                    }
+                    
+                    if (_permissions.readOnlyTasks == null || _permissions.readOnlyTasks === false) {
+                        dueDateField.readOnly();
+                        
+                        if (taskModel.taskState === "created") {
+                            if (taskModel.taskStatus === "Cumplida" || taskModel.taskStatus === "No cumplida" || taskModel.taskStatus === "Extemporanea") {
+                                readOnlyMode();
+                            }
+                            else if (taskModel.taskStatus === "Vencida") {
+                                statusOptions = [taskModel.taskStatus];
+                                outDueDateBtnAction.show();
+                            }
+                        }
+                        else if (taskModel.taskState === "modified") {
+                            if (taskModel.taskStatus === "Extemporanea") {
+                                statusOptions = [taskModel.taskStatus];
+                            }
+                        }
+                        
+                        
+                        if (taskModel.taskStatus === "Abierta" || taskModel.taskStatus === "En progreso") {
+                            changeDueDateBtnAction.show();
+                        }
+                    } else {
+                        readOnlyMode(true);
+                    }
+                    
+                    statusField.setItems(statusOptions, taskModel.taskStatus);
                 }
+                
             };
             
             var savingActionEvent = function() {
@@ -340,6 +405,7 @@
                 var assignedToField = formDomManipulation.getField(_formFields, fields.assignedTo);
                 var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
                 var bodyField = formDomManipulation.getField(_formFields, fields.body);
+                var justificationField = formDomManipulation.getField(_formFields, fields.justification);
                 var statusField = formDomManipulation.getField(_formFields, fields.status);
                 
                 // console.log(descriptionField.getValue());
@@ -373,17 +439,23 @@
                         _taskModel.fullDescription = descriptionField.getValue();
                         _taskModel.miniDescription = descriptionField.getText(255);
                         _taskModel.assignedTo.displayName = assignedToField.getValue();
-                        _taskModel.assignedTo.loginName = assignedToField.getValue();         
-                        //_taskModel.dueDate = dueDateField.    
+                        _taskModel.assignedTo.loginName = assignedToField.getValue();
                         _taskModel.body = bodyField.getValue();
                         _taskModel.taskState = "modified";
                         _taskModel.taskStatus = statusField.getValue();
                         
+                        if (_justificationIsRequired) { 
+                            _taskModel.dueDate = dueDateField.getValue();
+                            _taskModel.justification = justificationField.getValue();
+                        }
                         
-                        if (_taskModel === "Abierta") {
-                            if (!bodyField.isEmpty()) {
+                        if (_taskModel.taskStatus === "Abierta" || _taskModel.taskStatus === "En progreso") {
+                            if (bodyField.isEmpty()) {
+                                _taskModel.taskStatus = "Abierta";
+                            }
+                            else {
                                 _taskModel.taskStatus = "En progreso";
-                            }    
+                            }     
                         }
                          
                     }    
@@ -406,17 +478,39 @@
                 if (_finishingCallBack) {
                     _finishingCallBack("deleting");    
                 }
-            }       
+            } 
+            
+            var changeDueDateActionEvent = function() {
+                var justificationField = formDomManipulation.getField(_formFields, fields.justification);
+                var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
+                
+                justificationField.show();
+                dueDateField.allowEdit();
+                _justificationIsRequired = true;
+            }      
+            
+            var outDueDateActionEvent = function() {
+                var statusField = formDomManipulation.getField(_formFields, fields.status);
+                var justificationField = formDomManipulation.getField(_formFields, fields.justification);
+                justificationField.show();
+                
+                var status = "Extemporanea";
+                var statusOptions = [status]; 
+                statusField.setItems(statusOptions, status);
+                _justificationIsRequired = true;
+            }
             
             
             var formDomManipulation = (function() {
                 
-                var init = function(taskModel, formFields, saveActionCallBack, deleteActionCallBack) {
+                var init = function(taskModel, formFields, saveActionCallBack, deleteActionCallBack, changeDueDateCallBack, outDueDateCallBack) {
                     console.log("Initializing Form");
                     
                     var deleteBtnAction = getAction(formFields, "deleteBtn");
                     var saveBtnAction = getAction(formFields, "saveBtn");
-                    
+                    var changeDueDateBtnAction = getAction(formFields, "changeDueDateBtn");
+                    var outDueDateBtnAction = getAction(formFields, "outDueDateBtn");
+                
                     // initialize datePicker control
                     $(formFields).find('.bootstrap-date').datepicker({
                         language: "es",
@@ -439,16 +533,20 @@
                                 //deleteTask(taskModel.taskId);    
                             }
                         }                       
-                    });                   
+                    });   
                     
-                    // var statusValues = [{key : "k1", value : "0"}];
-                    // var statusField = formFields.find("div[data-taskfield='Status'] select");
-                    // $.each(statusValues, function(key, value) {   
-                    //     $(statusField)
-                    //         .append($("<option></option>")
-                    //                     .attr("value",key)
-                    //                     .text(value)); 
-                    // });                                                
+                    changeDueDateBtnAction.getControl().on('click', function() {
+                        if (changeDueDateCallBack) {
+                            changeDueDateCallBack();    
+                        }                        
+                    });
+                    
+                    outDueDateBtnAction.getControl().on('click', function() {
+                        if (outDueDateCallBack) {
+                            outDueDateCallBack();    
+                        }                        
+                    });
+                                                             
                 }             
                 
                 var getField = function(formFields, fieldName) {
@@ -475,12 +573,19 @@
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
                             },
+                            show : function() {
+                                fieldContainer.removeClass("hide");    
+                                fieldControl.focus();                
+                            },
                             isEmpty : function() {
                                 var text = fieldControl.text().trim();
                                 return (text == "" ? true : false);
                             },
                             readOnly : function() {
-                                $(fieldControl).attr("contenteditable", false);
+                                fieldControl.attr("contenteditable", false);
+                            },
+                            allowEdit : function() {
+                                fieldControl.attr("contenteditable", true);
                             }                           
                         }
                     }; 
@@ -496,8 +601,15 @@
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
                             },
+                            show : function() {
+                                fieldContainer.removeClass("hide");         
+                                fieldControl.focus();
+                            },
                             readOnly : function() {
                                 fieldControl.attr('readonly', true);
+                            },
+                            allowEdit : function() {
+                                fieldControl.attr('readonly', false);
                             }                            
                         }
                     };  
@@ -513,9 +625,16 @@
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
                             },
+                            show : function() {
+                                fieldContainer.removeClass("hide");     
+                                fieldControl.focus();               
+                            },
                             readOnly : function() {
                                 fieldControl.attr('readonly', true);
-                            }                            
+                            },
+                            allowEdit : function() {
+                                fieldControl.attr('readonly', false);
+                            }                           
                         }
                     };   
                     
@@ -535,9 +654,17 @@
                             hide : function() {
                                 fieldContainer.addClass("hide");
                             },
+                            show : function() {
+                                fieldContainer.removeClass("hide");    
+                                fieldControl.focus();                
+                            },
                             readOnly : function() {
                                 fieldControl.attr('readonly', true);
                                 fieldControl.prop('disabled', true);
+                            },
+                            allowEdit : function() {
+                                fieldControl.attr('readonly', false);
+                                fieldControl.prop('disabled', false);
                             }                            
                         }
                     };     
@@ -559,8 +686,14 @@
                             hide : function(params) {
                                 fieldContainer.addClass("hide");
                             },
+                            show : function() {
+                                fieldControl.removeClass("hide");                    
+                            },
                             readOnly : function() {
                                 fieldControl.attr('readonly', true);
+                            },
+                            allowEdit : function() {
+                                fieldControl.attr('readonly', false);
                             }                            
                         }
                     }   
@@ -612,6 +745,9 @@
                             },
                             hide : function() {
                                 $(fieldControl).addClass("hide");                    
+                            },
+                            show : function() {
+                                $(fieldControl).removeClass("hide");                    
                             }
                         } 
                     } 
@@ -627,11 +763,20 @@
                         
                         return buttonActionOutput(fieldControl);
                     } 
-                }  
-                
-                // var enableEditMode = function() {
-                //     console.log("Edit form mode");
-                // }
+                    
+                    if (actionName === "changeDueDateBtn") {
+                        fieldControl = $("#btnChangeDueDate");
+                        
+                        return buttonActionOutput(fieldControl);
+                    }
+                    
+                    if (actionName === "outDueDateBtn") {
+                        fieldControl = $("#btnOutDueDate");
+                        
+                        return buttonActionOutput(fieldControl);
+                    }
+                  
+                }
                 
                 return {
                     init : init,    

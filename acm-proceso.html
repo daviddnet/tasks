@@ -59,7 +59,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Nueva tarea</h4>
+                    <h4 class="modal-title">Detalle tarea</h4>
                 </div>
                 <div class="modal-body">
                     <div class="form-horizontal" role="form">
@@ -116,6 +116,8 @@
                     <!--end form-horizontal-->
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-info" id="btnChangeDueDate">Cambiar Fecha</button>
+                    <button type="button" class="btn btn-info" id="btnOutDueDate">Extemporánea</button>
                     <button type="button" class="btn btn-success" id="btnSaveTask">Guardar</button>
                     <button type="button" class="btn btn-danger" id="btnDeleteTask">Eliminar</button>
                     <button type="button" class="btn btn-default" id="btnCancelTask" data-dismiss="modal">Cancelar</button>
@@ -156,9 +158,74 @@
                         displayName : "Juan David Maya",
                         loginName : "lagashcoldev\juandavidm"                        
                     },
-                    dueDate : "2016-06-15T23:01:34.975Z",                    
+                    dueDate : "2016-08-15T23:01:34.975Z",                    
                     body : ""
-                }                    
+                },
+                {
+                    taskId : "c2",
+                    taskState : "created",
+                    taskStatus : "Vencida",
+                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    miniDescription : "Aquí descripción tarea 2",
+                    assignedTo : {
+                        displayName : "Juan David Maya",
+                        loginName : "lagashcoldev\juandavidm"                        
+                    },
+                    dueDate : "2016-05-15T23:01:34.975Z",                    
+                    body : ""
+                },
+                {
+                    taskId : "c3",
+                    taskState : "created",
+                    taskStatus : "En progreso",
+                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    miniDescription : "Aquí descripción tarea 3",
+                    assignedTo : {
+                        displayName : "Juan David Maya",
+                        loginName : "lagashcoldev\juandavidm"                        
+                    },
+                    dueDate : "2016-07-09T23:01:34.975Z",                    
+                    body : ""
+                },
+                {
+                    taskId : "c4",
+                    taskState : "created",
+                    taskStatus : "Cumplida",
+                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    miniDescription : "Aquí descripción tarea 4",
+                    assignedTo : {
+                        displayName : "Juan David Maya",
+                        loginName : "lagashcoldev\juandavidm"                        
+                    },
+                    dueDate : "2016-07-15T23:01:34.975Z",                    
+                    body : ""
+                },
+                {
+                    taskId : "c5",
+                    taskState : "created",
+                    taskStatus : "No cumplida",
+                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    miniDescription : "Aquí descripción tarea 5",
+                    assignedTo : {
+                        displayName : "Juan David Maya",
+                        loginName : "lagashcoldev\juandavidm"                        
+                    },
+                    dueDate : "2016-05-23T23:01:34.975Z",                    
+                    body : ""
+                },
+                {
+                    taskId : "c6",
+                    taskState : "created",
+                    taskStatus : "Extemporanea",
+                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    miniDescription : "Aquí descripción tarea 6",
+                    assignedTo : {
+                        displayName : "Juan David Maya",
+                        loginName : "lagashcoldev\juandavidm"                        
+                    },
+                    dueDate : "2016-04-15T23:01:34.975Z",                    
+                    body : ""
+                }                          
             ]; 
             
             //var model = [];          
@@ -169,6 +236,7 @@
                 model : model,                
                 currentUserId : 0,     
                 permissions : {
+                    readOnlyTasks : false,
                     allowAddTasks : true,
                     allowEditAllTasks : false    
                 },                     
