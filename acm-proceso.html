@@ -33,7 +33,7 @@
                 </div>
                 <div class="task-list list-group">
                     {{#each .}}                       
-                    <a href="#" class="task-item list-group-item" data-taskId="{{taskId}}">                            
+                    <div class="task-item list-group-item" data-taskId="{{taskId}}">                                                   
                         <h4 class="list-group-item-heading">
                             <span class="task-number">{{ inc @index}}</span>
                             <span class="task-status label label-info pull-right">{{taskStatus}}</span> 
@@ -44,8 +44,8 @@
                         </span>
                         <div class="list-group-item-text task-description">
                         {{{unescapeHtml fullDescription}}}    
-                        </div>
-                    </a>     
+                        </div>                        
+                    </div>     
                     {{/each}}  
                 </div>
             </div>
@@ -68,7 +68,7 @@
                             <div class="form-group" data-taskField="Description">
                                 <label class="control-label col-sm-3" for="email">Descripción:</label>
                                 <div class="col-sm-9">
-                                    <div class="form-control custom-editable small allowAttachment" contenteditable="true">{{fullDescription}}</div>
+                                    <div class="form-control custom-editable small allowAttachment" contenteditable="true">{{{fullDescription}}}</div>
                                 </div>
                             </div>
                             <div class="form-group" data-taskField="AssignedTo">
@@ -153,7 +153,7 @@
                     taskId : "c1",
                     taskState : "created",
                     taskStatus : "Abierta",
-                    fullDescription : "Aquí se pone la descripción completa de la tarea que se debe realizar",
+                    fullDescription : "<b>Aquí</b> se pone la descripción completa de la tarea que se debe realizar <a href=\'http://google.com\'>Click aquí</a>",
                     miniDescription : "Aquí descripción tarea 1",
                     assignedTo : {
                         displayName : "Juan David Maya",

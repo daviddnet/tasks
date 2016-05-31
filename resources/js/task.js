@@ -42,26 +42,24 @@
             plugin.settings = $.extend({}, defaults, options);
             plugin.el = el; 
             var s = plugin.settings;
+            var t = s.templates;
             
             // Extracting Handlebars Templates
-            var t = s.templates;
-            var sourceTaskList   = $(t.listTemplateID).html();
-            t.listTemplate = Handlebars.compile(sourceTaskList);
-            var sourceTaskDetail = $(t.detailTemplateID).html();
-            t.detailTemplate = Handlebars.compile(sourceTaskDetail);
-            
-            // validations                  
-            // if (s.model) {
-            //     _allowInit = true;
-            // } else {
-            //     console.log("Unable to initialize tasks component.");
-            // }
-            
-            _allowInit = true;
-            if (!s.model) { s.model = []; }
-            
-            // Register handleBars Helpers
-            registerHandleBarHelpers();            
+            if (t.listTemplateID && t.detailTemplateID) {
+                var sourceTaskList   = $(t.listTemplateID).html();
+                t.listTemplate = Handlebars.compile(sourceTaskList);
+                var sourceTaskDetail = $(t.detailTemplateID).html();
+                t.detailTemplate = Handlebars.compile(sourceTaskDetail);
+                
+                _allowInit = true;
+                if (!s.model) { s.model = []; }
+                
+                // Register handleBars Helpers
+                registerHandleBarHelpers(); 
+            } else {
+                _allowInit = false;
+            }           
+                       
         }
 
         plugin.listTasks = function() {
@@ -81,6 +79,7 @@
             var r = s.restrictions;
             var m = s.model;
             
+            // validates minumum tasks for be added
             if (m.length >= r.minimumTasksRequired) {
                 return true;
             } else {
@@ -91,6 +90,7 @@
         }
         
         plugin.getLastTaskDueDate = function() {
+            // this method get last Due Date
             var lastDate = null;
             
             //TODO: a este método le faltan pruebas, no está ordenando bien
@@ -116,7 +116,7 @@
             error : "error"
         }
         
-        var addMessage = function(message, type) {
+        var addMessage = function(message, type) {            
             if (!type) { type = "";}
             
             var output = '<div class="task-message ' + type + '">' + message + '</div>';
@@ -397,6 +397,7 @@
                         
                         if (taskModel.taskState === "created") {
                             if (taskModel.taskStatus === "Cumplida" || taskModel.taskStatus === "No cumplida" || taskModel.taskStatus === "Extemporanea") {
+                                addMessage("Ya esta tarea se encuentra finalizada", messageType.info);
                                 readOnlyMode();
                             }
                             else if (taskModel.taskStatus === "Vencida") {
@@ -415,6 +416,7 @@
                             changeDueDateBtnAction.show();
                         }
                     } else {
+                        addMessage("No es posible modificar esta tarea", messageType.info);
                         readOnlyMode(true);
                     }
                     
@@ -632,7 +634,8 @@
                     var richTextFieldOutput = function(fieldControl) {
                         return {                            
                             getValue : function() {
-                                return utils.htmlEscape(fieldControl.html());
+                                //return utils.htmlEscape(fieldControl.html());
+                                return fieldControl.html();
                             },
                             getText : function(maxLength) {
                                 var text = fieldControl.text();
@@ -985,8 +988,9 @@
             
             Handlebars.registerHelper("unescapeHtml", function(value, options)
             {
-                var unescaped = utils.htmlUnescape(value);
-                return new Handlebars.SafeString(unescaped);
+                //var unescaped = utils.htmlUnescape(value);
+                //return new Handlebars.SafeString(unescaped);
+                return new Handlebars.SafeString(value);
             });
             
             Handlebars.registerHelper("getLastTask", function(value, options)
@@ -1013,15 +1017,22 @@
         }
         
         var registerTaskListEvents = function() {
-            // binding list Events
+            // Add tasks click event
             $(el).find(".task-add-btn").on("click", function() {
                  newTask();
             });
             
+            // Edit task click event
             $(el).find(".task-item").on("click", function() {
                 var taskId = $(this).data("taskid");
                 editTask(taskId);
             });      
+            
+            // avoids parent click propagation (for Description anchor elements )
+            $(el).find(".task-item .task-description a").on("click", function(e) {
+                e.stopPropagation();
+            });
+            
         }
 
         init();
