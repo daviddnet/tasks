@@ -281,7 +281,9 @@
                 },
                 dueDate : "",                    
                 body : "",
-                justification : ""
+                justification : "",
+                hasJustificationData : false,
+                hasBodyData : false
             }
         } 
         
@@ -306,6 +308,23 @@
                 "deleteBtn" : "deleteBtn",
                 "changeDueDateBtn" : "changeDueDateBtn",
                 "outDueDateBtn" : "outDueDateBtn"
+            }
+            
+            var messageType = {
+                info : "info",
+                warning : "warning",
+                error : "error"
+            }
+            
+            var addMessage = function(message, type) {
+                if (!type) { type = "";}
+                
+                var output = '<div class="task-message ' + type + '">' + message + '</div>';
+                $("#binnacle-task-detail .task-messages").append(output);    
+            }
+            
+            var clearMessages = function() {
+                $("#binnacle-task-detail .task-messages").empty();
             }
             
             var init = function(taskModel, permissions, formFields, finishingCallBack) {
@@ -347,6 +366,11 @@
                 }
                 else if (taskModel.taskState === "created" || taskModel.taskState === "modified" ) {
                     var statusOptions = ["Abierta","En progreso", "Cumplida","No cumplida"];
+                    
+                    if (taskModel.hasBodyData === true) {
+                        statusOptions = ["En progreso", "Cumplida","No cumplida"];
+                    }
+                    
                     var readOnlyMode = function(hideDeleteBtn) {
                         descriptionField.readOnly();
                         assignedToField.readOnly();
@@ -381,7 +405,7 @@
                             }
                         }
                         else if (taskModel.taskState === "modified") {
-                            if (taskModel.taskStatus === "Extemporanea") {
+                            if (taskModel.taskStatus != "Abierta" && taskModel.taskStatus != "En progreso") {
                                 statusOptions = [taskModel.taskStatus];
                             }
                         }
@@ -399,6 +423,52 @@
                 
             };
             
+            var validate = function() {   
+                console.log("validating detail model");
+                var descriptionField = formDomManipulation.getField(_formFields, fields.description);
+                var assignedToField = formDomManipulation.getField(_formFields, fields.assignedTo);
+                var dueDateField = formDomManipulation.getField(_formFields, fields.dueDate);
+                var bodyField = formDomManipulation.getField(_formFields, fields.body);
+                var justificationField = formDomManipulation.getField(_formFields, fields.justification);
+                var statusField = formDomManipulation.getField(_formFields, fields.status);
+                              
+                clearMessages();
+                var isValid = false;
+                if (_taskModel) {
+                    if (_taskModel.taskState === "new" || _taskModel.taskState === "added") {
+                        isValid =
+                        (descriptionField.validateRequired("Debes ingresar una descripción")) &
+                        (assignedToField.validateRequired("Debes ingresar un responsable")) &
+                        (dueDateField.validateRequired("Debes ingresar la fecha de compromiso"));                        
+                    }                    
+                    else if(_taskModel.taskState === "created" || _taskModel.taskState === "modified") {
+                        
+                        var validateJustification = function(message) {
+                            if (_justificationIsRequired || _taskModel.justification) {
+                                return (justificationField.validateRequired(message));
+                            } else {
+                                return true;
+                            }       
+                        }
+                        
+                        isValid =
+                        (descriptionField.validateRequired("Debes ingresar una descripción")) &
+                        (assignedToField.validateRequired("Debes ingresar un responsable")) &
+                        (statusField.validateRequired("Debes seleccionar un estado")) &
+                        (dueDateField.validateRequired("Debes ingresar la fecha de compromiso")) &
+                        validateJustification("Debes ingresar una justificación")
+                        
+                        
+                    }
+                }
+                
+                if (isValid === false) {                   
+                    addMessage("No has ingresado correctamente todos los datos de la tarea.", messageType.error);    
+                }
+                
+                return isValid;
+            };  
+            
             var savingActionEvent = function() {
                 console.log("Saving data");
                 var descriptionField = formDomManipulation.getField(_formFields, fields.description);
@@ -415,6 +485,7 @@
                        
                 var validated = validate();
                 if (validated) {
+                    
                     // it's new Task
                     if (_taskModel.taskState === "new" || _taskModel.taskState === "added") {
                         _taskModel.fullDescription = descriptionField.getValue();
@@ -424,18 +495,8 @@
                         _taskModel.dueDate = dueDateField.getValue();     
                         _taskModel.body = bodyField.getValue();
                         
-                        if (utils.dateIsExpired(_taskModel.dueDate)) {
-                            _taskModel.taskStatus = "Vencida";
-                        } else {
-                            if (bodyField.isEmpty()) {
-                                _taskModel.taskStatus = "Abierta";
-                            }
-                            else {
-                                _taskModel.taskStatus = "En progreso";
-                            }              
-                        }
                     }
-                    else if(_taskModel.taskState === "created" || _taskModel.taskState === "modified") {
+                    else if(_taskModel.taskState === "created" || _taskModel.taskState === "modified") {                        
                         _taskModel.fullDescription = descriptionField.getValue();
                         _taskModel.miniDescription = descriptionField.getText(255);
                         _taskModel.assignedTo.displayName = assignedToField.getValue();
@@ -445,20 +506,29 @@
                         _taskModel.taskStatus = statusField.getValue();
                         
                         if (_justificationIsRequired) { 
-                            _taskModel.dueDate = dueDateField.getValue();
+                            if (_taskModel.taskStatus != "Extemporanea") {
+                                _taskModel.dueDate = dueDateField.getValue();    
+                            }
+                            
                             _taskModel.justification = justificationField.getValue();
-                        }
-                        
-                        if (_taskModel.taskStatus === "Abierta" || _taskModel.taskStatus === "En progreso") {
-                            if (bodyField.isEmpty()) {
+                        } 
+                    }    
+                    
+                    // change status automatically
+                    if( (_taskModel.taskState === "new" || _taskModel.taskState === "added") || 
+                        (_taskModel.taskStatus == "Abierta" || _taskModel.taskStatus == "En progreso")) {
+                            
+                        if (utils.dateIsExpired(_taskModel.dueDate)) {
+                            _taskModel.taskStatus = "Vencida";
+                        } else {
+                            if (bodyField.isEmpty() && _taskModel.hasBodyData === false) {
                                 _taskModel.taskStatus = "Abierta";
                             }
                             else {
                                 _taskModel.taskStatus = "En progreso";
-                            }     
+                            }              
                         }
-                         
-                    }    
+                    }                   
                     
                     console.log(_taskModel); 
                     
@@ -466,10 +536,7 @@
                         _finishingCallBack("saving");    
                     }
                     
-                } 
-                else {
-                    _finishingCallBack("");
-                }
+                }               
             }
             
             var deletingActionEvent = function() {
@@ -502,6 +569,7 @@
             
             
             var formDomManipulation = (function() {
+                
                 
                 var init = function(taskModel, formFields, saveActionCallBack, deleteActionCallBack, changeDueDateCallBack, outDueDateCallBack) {
                     console.log("Initializing Form");
@@ -547,7 +615,15 @@
                         }                        
                     });
                                                              
-                }             
+                }         
+                
+                var resetValidationMessage = function(fieldContainer) {
+                    fieldContainer.find("div.validation").remove();                    
+                }
+                
+                var showValidationMessage = function(fieldControl, message) {
+                    fieldControl.after('<div class="validation">' + message + '</div>');
+                }    
                 
                 var getField = function(formFields, fieldName) {
                     var fieldContainer = formFields.find("div[data-taskfield='" + fieldName + "']");
@@ -586,6 +662,20 @@
                             },
                             allowEdit : function() {
                                 fieldControl.attr("contenteditable", true);
+                            },
+                            validateRequired : function(message) {
+                                var isValid = false;
+                                resetValidationMessage(fieldContainer);
+                                
+                                var val = fieldControl.text().trim()
+                                
+                                if (val == "") {
+                                    showValidationMessage(fieldControl, message);            
+                                } else {
+                                    isValid = true;
+                                }
+                                
+                                return isValid;
                             }                           
                         }
                     }; 
@@ -610,6 +700,21 @@
                             },
                             allowEdit : function() {
                                 fieldControl.attr('readonly', false);
+                            },
+                            validateRequired : function(message) {
+                                //TODO, este hay que cambiarlo
+                                var isValid = false;
+                                resetValidationMessage(fieldContainer);
+                                
+                                var val = fieldControl.val().trim();
+                                
+                                if (val == "") {
+                                    showValidationMessage(fieldControl, message);            
+                                } else {
+                                    isValid = true;
+                                }
+                                
+                                return isValid;
                             }                            
                         }
                     };  
@@ -634,6 +739,19 @@
                             },
                             allowEdit : function() {
                                 fieldControl.attr('readonly', false);
+                            },
+                            validateRequired : function(message) {
+                                var isValid = false;
+                                resetValidationMessage(fieldContainer);
+                                var val = fieldControl.val().trim();
+                                
+                                if (val == "") {
+                                    showValidationMessage(fieldControl, message);            
+                                } else {
+                                    isValid = true;
+                                }
+                                
+                                return isValid;
                             }                           
                         }
                     };   
@@ -665,6 +783,18 @@
                             allowEdit : function() {
                                 fieldControl.attr('readonly', false);
                                 fieldControl.prop('disabled', false);
+                            },
+                            validateRequired : function(message) {
+                                var isValid = false;
+                                resetValidationMessage(fieldContainer);
+                                var date = fieldControl.datepicker('getDate');
+                                if (!date) {
+                                    showValidationMessage(fieldControl, message);            
+                                } else {
+                                    isValid = true;
+                                }
+                                
+                                return isValid;
                             }                            
                         }
                     };     
@@ -693,7 +823,19 @@
                                 fieldControl.attr('readonly', true);
                             },
                             allowEdit : function() {
-                                fieldControl.attr('readonly', false);
+                                fieldControl.attr('readonly', false);                                
+                            },
+                            validateRequired : function(message) {
+                                var isValid = false;
+                                resetValidationMessage(fieldContainer);
+                                var index = fieldControl.find(":selected").index()
+                                if (index < 0) {
+                                    showValidationMessage(fieldControl, message);            
+                                } else {
+                                    isValid = true;
+                                }
+                                
+                                return isValid;
                             }                            
                         }
                     }   
@@ -785,15 +927,7 @@
                 }
             })();
             
-            var validate = function() {                 
-                var isValid = false;
-                if (_taskModel) {
-                    console.log("validating detail model");
-                    isValid = true;
-                }
-                
-                return isValid;
-            };     
+               
             
             return {
                 init :  init

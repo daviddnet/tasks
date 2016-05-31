@@ -53,3 +53,9 @@
 .task-detail .control-label {
     text-align: left;
 } 
+
+
+/*Messages styles*/
+.task-message {
+    margin: 5px 0;
+}
