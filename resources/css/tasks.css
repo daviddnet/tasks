@@ -48,6 +48,10 @@
     width: 110px;
 }
 
+#binnacle-task-detail .modal-dialog {
+    width: 600px;
+}
+
 .task-detail .custom-editable {
     height: auto;
     min-height: 100px;
@@ -72,7 +76,6 @@
 .task-detail .validation {
     color : #a94442;
 }
-
 
 /*Messages styles*/
 .task-message {
