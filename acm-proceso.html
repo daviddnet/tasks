@@ -36,7 +36,7 @@
                     <div class="task-item list-group-item" data-taskId="{{taskId}}">                                                   
                         <h4 class="list-group-item-heading">
                             <span class="task-number">{{ inc @index}}</span>
-                            <span class="task-status label label-info pull-right">{{taskStatus}}</span> 
+                            {{{ShowTaskStatus taskStatus}}}
                             <span class="assigned-to">{{assignedTo.displayName}}</span> 
                         </h4>
                         <span class="list-group-item-text">

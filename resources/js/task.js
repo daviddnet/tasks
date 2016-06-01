@@ -419,6 +419,7 @@
                                 readOnlyMode();
                             }
                             else if (taskModel.taskStatus === "Vencida") {
+                                addMessage("Esta tarea se encuentra vencida. Si la quieres completar puedes marcarla como Exemporánea", messageType.warning);
                                 statusOptions = [taskModel.taskStatus];
                                 outDueDateBtnAction.show();
                             }
@@ -1034,7 +1035,32 @@
                 return output;
             });
             
-            
+            Handlebars.registerHelper("ShowTaskStatus", function(value, options) {
+                var type = 'default';
+                
+                switch(value) {
+                    case "Abierta":
+                        type = "default";
+                        break;
+                    case "En progreso":
+                        type = "primary";
+                        break
+                    case "Vencida":
+                        type = "danger";
+                        break;
+                    case "Cumplida":
+                        type = "success";
+                        break;
+                    case "No cumplida":
+                    case "Extemporanea":
+                        type = "warning";
+                        break;                          
+                                      
+                         
+                }
+                
+                return new Handlebars.SafeString('<span class="task-status pull-right label label-' + type +'">' + value + '</span>');
+            });
         }
         
         var registerTaskListEvents = function() {
