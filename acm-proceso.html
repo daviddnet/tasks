@@ -27,7 +27,7 @@
                 <span class="pull-right">{{getLastTask}}</span>
             </div>
             <div class="panel-body">                    
-                <a href="#" class="btn btn-primary task-add-btn">Agregar tarea</a>
+                <a href="javascript:void(0)" class="btn btn-primary task-add-btn">Agregar tarea</a>
                 <div class="task-messages">
                     
                 </div>
@@ -159,7 +159,7 @@
                         displayName : "Juan David Maya",
                         loginName : "lagashcoldev\juandavidm"                        
                     },
-                    dueDate : "2016-08-15T23:01:34.975Z",                    
+                    dueDate : "2016-05-31T00:00:00.000Z",                    
                     body : "",
                     justification : "",
                     hasJustificationData : false,
@@ -262,7 +262,10 @@
             }            
             
             var binnacle = window.binnacle || {};
-            var binnacleTasks = new $.binnacleTasks($('#binnacle-tasks'), taskAppOptions);            
+            var binnacleTasks = new $.binnacleTasks($('#binnacle-tasks'), taskAppOptions, function(data) {
+                console.log("Change");
+                console.log(data);
+            });            
             binnacle.binnacleTasks = binnacleTasks; 
             
             // listing tasks

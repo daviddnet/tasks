@@ -2,7 +2,7 @@
 
 ;(function($, console, Handlebars, utils) {
 
-    $.binnacleTasks = function(el, options) {
+    $.binnacleTasks = function(el, options, onModelChangedCallBack) {
         var _allowInit = false;
         var _addedTasks = 0;
 
@@ -113,19 +113,28 @@
         var messageType = {
             info : "info",
             warning : "warning",
-            error : "error"
+            error : "danger",
+            success : "success"
         }
         
         var addMessage = function(message, type) {            
             if (!type) { type = "";}
             
-            var output = '<div class="task-message ' + type + '">' + message + '</div>';
+            var output = '<div class="task-message alert alert-' + type + ' fade in"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><span>' + message + '</span></div>';
             $(el).find(".task-messages").append(output);    
         }
         
         var clearMessages = function() {
             $(el).find(".task-messages").empty();
         } 
+        
+        var notifyModelChange = function() {            
+            var s = plugin.settings;
+                
+            if (typeof onModelChangedCallBack == 'function') { 
+                onModelChangedCallBack({ "model" : s.model } );
+            }            
+        }
         
         var listTasks = function() {
             if (_allowInit) {
@@ -197,7 +206,7 @@
                 taskModel.taskState = "added";
                 
                 console.log("adding task");
-                s.model.push(taskModel);
+                s.model.push(taskModel);               
                 listTasks();    
             }
         }    
@@ -215,6 +224,8 @@
                 // flagged for deletion server side
                 task.taskState = "deleted";
             }
+            
+            
         }       
         
         var showTaskDialog = function(taskId) {
@@ -249,16 +260,22 @@
                 
                 if (type === "saving") {
                     if (task.taskState === "new") {
-                        addTask(task);    
+                        addTask(task);
+                        addMessage("Se agregó una nueva tarea exitosamente.", messageType.success);
                     }
-                    else {
+                    else {                        
                         listTasks();
+                        addMessage("Se actualizaron los datos de la tarea exitosamente.", messageType.success);
                     }
                 }
                 else if (type === "deleting") {
-                    deleteTask(task.taskId);
+                    deleteTask(task.taskId);                    
                     listTasks();
+                    addMessage("Se eliminó una tarea exitosamente.", messageType.success);
                 }
+                
+                // notifies Model change
+                notifyModelChange();
                 
                 // hides Modal
                 $(m.detailContainerID).modal("hide");
@@ -313,13 +330,14 @@
             var messageType = {
                 info : "info",
                 warning : "warning",
-                error : "error"
+                error : "danger",
+                success : "success"
             }
             
             var addMessage = function(message, type) {
                 if (!type) { type = "";}
                 
-                var output = '<div class="task-message ' + type + '">' + message + '</div>';
+                var output = '<div class="task-message alert alert-' + type + ' fade in"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><span>' + message + '</span></div>';
                 $("#binnacle-task-detail .task-messages").append(output);    
             }
             
@@ -464,7 +482,7 @@
                     }
                 }
                 
-                if (isValid === false) {                   
+                if (isValid == 0 || isValid == false) {                   
                     addMessage("No has ingresado correctamente todos los datos de la tarea.", messageType.error);    
                 }
                 
@@ -620,11 +638,14 @@
                 }         
                 
                 var resetValidationMessage = function(fieldContainer) {
+                    fieldContainer.find("*.error").removeClass("error");
                     fieldContainer.find("div.validation").remove();                    
                 }
                 
                 var showValidationMessage = function(fieldControl, message) {
+                    fieldControl.addClass("error");
                     fieldControl.after('<div class="validation">' + message + '</div>');
+                    fieldControl.focus();
                 }    
                 
                 var getField = function(formFields, fieldName) {

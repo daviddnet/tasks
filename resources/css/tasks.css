@@ -11,7 +11,7 @@
     margin: 10px 0px;
 }
 
-.task-list .list-group-item {
+.task-list .list-group-item {   
     cursor: pointer;
 }
 
@@ -63,6 +63,15 @@
 .task-detail .control-label {
     text-align: left;
 } 
+
+.task-detail .form-group .error {
+    border-color: #a94442;
+    color: #a94442;
+}
+
+.task-detail .validation {
+    color : #a94442;
+}
 
 
 /*Messages styles*/
