@@ -414,7 +414,7 @@
                         dueDateField.readOnly();
                         
                         if (taskModel.taskState === "created") {
-                            if (taskModel.taskStatus === "Cumplida" || taskModel.taskStatus === "No cumplida" || taskModel.taskStatus === "Extemporanea") {
+                            if (taskModel.taskStatus === "Cumplida" || taskModel.taskStatus === "No cumplida" || taskModel.taskStatus === "Extemporánea") {
                                 addMessage("Ya esta tarea se encuentra finalizada", messageType.info);
                                 readOnlyMode();
                             }
@@ -427,6 +427,12 @@
                         else if (taskModel.taskState === "modified") {
                             if (taskModel.taskStatus != "Abierta" && taskModel.taskStatus != "En progreso") {
                                 statusOptions = [taskModel.taskStatus];
+                            }
+                            
+                            if (taskModel.taskStatus === "Vencida") {
+                                addMessage("Esta tarea se encuentra vencida. Si la quieres completar puedes marcarla como Exemporánea", messageType.warning);
+                                statusOptions = [taskModel.taskStatus];
+                                outDueDateBtnAction.show();
                             }
                         }
                         
@@ -527,7 +533,7 @@
                         _taskModel.taskStatus = statusField.getValue();
                         
                         if (_justificationIsRequired) { 
-                            if (_taskModel.taskStatus != "Extemporanea") {
+                            if (_taskModel.taskStatus != "Extemporánea") {
                                 _taskModel.dueDate = dueDateField.getValue();    
                             }
                             
@@ -582,7 +588,7 @@
                 var justificationField = formDomManipulation.getField(_formFields, fields.justification);
                 justificationField.show();
                 
-                var status = "Extemporanea";
+                var status = "Extemporánea";
                 var statusOptions = [status]; 
                 statusField.setItems(statusOptions, status);
                 _justificationIsRequired = true;
@@ -1052,7 +1058,7 @@
                         type = "success";
                         break;
                     case "No cumplida":
-                    case "Extemporanea":
+                    case "Extemporánea":
                         type = "warning";
                         break;                          
                                       

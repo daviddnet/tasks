@@ -49,7 +49,7 @@
 }
 
 #binnacle-task-detail .modal-dialog {
-    width: 600px;
+    width: 600px !important;
 }
 
 .task-detail .custom-editable {
