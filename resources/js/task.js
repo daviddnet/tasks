@@ -26,8 +26,7 @@
             },
             permissions : {
                 readOnlyTasks : false,
-                allowAddTasks : true,
-                allowEditAllTasks : false    
+                allowAddTasks : true,                 
             },            
             resources : {
                 "tasks.x1" : "Data 1",
